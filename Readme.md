@@ -7,17 +7,26 @@ El deploy automático se hace al taguear y se genera mediante la api de render
     - Crear el tag
  ``` git tag -a v1.0.0 -m 'primer version```
  ``` git push origin v1.0.0 ```
+Se deshabilita el autodeploy y queda habilitado para deployar cuando se hace un tag
 
-Para deployar se agregan las credenciales en github como secret
+Flujo de trabajo: 
+- Se genera el branch y el pr
+- Se ejecutan los pipelines de CI
+- Cuando se genera el merge se vuelve a ejecutar el pipeline de CI
+- Cuando se taguea se deploya automaticamente
+
+#### Para deployar se agregan las credenciales en github como secret
 
 - Agregar las secrets a github 
  - RENDER_API_KEY ``` gh secret set RENDER_API_KEY --body "tu_api_key_de_render" ```
  - RENDER_SERVICE_ID ``` gh secret set RENDER_SERVICE_ID --body "tu_service_id_de_render" ```
- 
+
 Observacion: Si el servicio esta bajo. Hacer un tag y deployar
 ### Ejecutar la aplicacion local
  fastapi dev main.py
 
-### crear
+### Decisiones de diseño. 
+- Usamos strategy para implementar la lógica de cada uno de los tipos de pago
+
 
  # Examen  1

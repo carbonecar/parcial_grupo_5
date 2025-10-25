@@ -1,0 +1,7 @@
+{
+    "1": {
+        "amount": 10000.0,
+        "payment_method": "credit_card",
+        "status": "FALLIDO"
+    }
+}
