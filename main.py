@@ -3,7 +3,6 @@
 """
 import json
 import os
-from pydantic import BaseModel
 from fastapi import FastAPI
 
 STATUS = "status"
@@ -52,6 +51,17 @@ def save_payment(payment_id, amount, payment_method, status):
         STATUS: status,
     }
     save_payment_data(payment_id, data)
+    
+@app.get("/payments")
+async def obtener_pagos():
+    """
+    Obtiene todos los pagos del sistema.
+    """
+    if not os.path.isfile(DATA_PATH):
+        return {"payments": {}}
+    payments = load_all_payments()
+    return {"payments": payments}
+
 
 ### metdos de prueba
 @app.get("/")
