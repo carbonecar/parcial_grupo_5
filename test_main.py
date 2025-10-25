@@ -7,6 +7,7 @@ client = TestClient(app)
 @pytest.fixture(scope="module", autouse=True)
 
 def setup_and_teardown():
+    """Fixture para configurar y limpiar el entorno de pruebas."""
     # Setup: Crear un archivo de datos de prueba antes de las pruebas
     test_data = {
         "1": {
@@ -28,6 +29,7 @@ def setup_and_teardown():
     os.remove("data.json")
 
 def test_obtener_pagos():
+    """Prueba para el endpoint GET /payments"""
     response = client.get("/payments")
     assert response.status_code == 200
     data = response.json()

@@ -1,12 +1,1 @@
-{
-    "1": {
-        "amount": 100.0,
-        "payment_method": "paypal",
-        "status": "PAGADO"
-    },
-    "2": {
-        "amount": 7000.0,
-        "payment_method": "credit_card",
-        "status": "PAGADO"
-    }
-}
+{}

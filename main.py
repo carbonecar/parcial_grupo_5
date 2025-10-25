@@ -1,7 +1,6 @@
 """
     Servidor de ejemplo para la práctica de FastAPI
 """
-import json
 import os
 from fastapi import FastAPI
 from credit_card_payment_strategy import CreditCardPaymentStrategy
