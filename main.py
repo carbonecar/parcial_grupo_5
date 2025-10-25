@@ -95,12 +95,35 @@ async def pay_payment(payment_id: str):
     Si el pago con PayPal es >= 5000 se marca como PAGADO.
     """
     payment_data = load_payment(payment_id)
+    ## verifico que si el metodo de pago es tarjeta de credito el monto no sea menor a 10.000 y Validamos que no exista mas de un pago con estado registrado
+    if payment_data[PAYMENT_METHOD] == "credit_card" and payment_data[AMOUNT] < 10000:
+        payment_data[STATUS] = STATUS_FALLIDO
+        save_payment_data(payment_id, payment_data)
+        return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para tarjeta de crédito."}
+
+    ## Validamos que no exista mas de un pago con estado registrado
+    all_payments = load_all_payments()
+    for pid, pdata in all_payments.items():
+        if pid != payment_id and pdata[STATUS] == STATUS_REGISTRADO:
+            payment_data[STATUS] = STATUS_FALLIDO
+            save_payment_data(payment_id, payment_data)
+            return {"message": f"Pago con ID {payment_id} fallido. Ya existe un pago registrado pendiente."}
+
+    payment_data[STATUS] = STATUS_PAGADO
+    save_payment_data(payment_id, payment_data)
     amount = float(payment_data.get(AMOUNT, 0))
     method = str(payment_data.get(PAYMENT_METHOD, "")).strip().lower()
 
     # Considerar tanto "2" como "paypal" como identificadores del método PayPal
     if method in ("2", "paypal"):
-        if amount >= 5000.0:
+        if amount >= 5000:
+            payment_data[STATUS] = STATUS_PAGADO
+        else:
+            payment_data[STATUS] = STATUS_FALLIDO
+            save_payment_data(payment_id, payment_data)
+            return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para PayPal."}
+    
+    return {"message": f"Pago con ID {payment_id} marcado como pagado."}
 
 @app.post("/payments/{payment_id}/revert")
 async def revert_payment(payment_id: str):
