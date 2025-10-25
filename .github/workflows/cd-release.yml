@@ -1,0 +1,229 @@
+name: CD Release Pipeline
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # ej: v1.0.0
+
+concurrency:
+  group: cd-render-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & Test (FastAPI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest
+
+      - name: Run tests
+        run: |
+          if command -v pytest >/dev/null 2>&1; then
+            pytest -q
+          else
+            echo "pytest no instalado"; exit 1
+          fi
+
+  release:
+    name: Create GitHub Release
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Usa softprops/action-gh-release (evita set-output deprecado)
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            Nueva versión liberada: ${{ github.ref_name }}
+            Release generado automáticamente por el pipeline de CD.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    name: Deploy to Render (API + Poll sin heredocs)
+    needs: release
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Trigger deploy
+        id: trigger
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+          test -n "${RENDER_API_KEY:-}"    || { echo "Falta RENDER_API_KEY"; exit 1; }
+          test -n "${RENDER_SERVICE_ID:-}" || { echo "Falta RENDER_SERVICE_ID"; exit 1; }
+
+          HTTP_CODE=$(mktemp)
+          RESP_BODY=$(mktemp)
+
+          curl -sS -X POST \
+            "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            -w "%{http_code}" -o "$RESP_BODY" > "$HTTP_CODE"
+
+          code=$(cat "$HTTP_CODE")
+          echo "HTTP code: $code"
+          echo "Respuesta (primeras 400 chars):"
+          head -c 400 "$RESP_BODY" || true
+          echo
+
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "❌ La API devolvió un status no-2xx. Abortando."
+            exit 1
+          fi
+
+          # Extraer deploy_id sin heredoc
+          DEPLOY_ID=$(python -c "import sys,json; print(json.load(open('$RESP_BODY','rb')).get('id',''))")
+          if [ -z "$DEPLOY_ID" ]; then
+            echo '❌ No se pudo extraer "id" del JSON de respuesta.'
+            cat "$RESP_BODY"
+            exit 1
+          fi
+
+          echo "deploy_id=$DEPLOY_ID" >> "$GITHUB_OUTPUT"
+          echo "🚀 Deploy disparado: $DEPLOY_ID"
+
+      - name: Wait until LIVE (robusto con fallback 404)
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          DEPLOY_ID: ${{ steps.trigger.outputs.deploy_id }}
+        run: |
+          set -euo pipefail
+          echo "DEPLOY_ID recibido: ${DEPLOY_ID:-<vacío>}"
+          test -n "${DEPLOY_ID:-}" || { echo "No se obtuvo DEPLOY_ID del paso anterior"; exit 1; }
+
+          TIMEOUT=1200
+          INTERVAL=10
+          ELAPSED=0
+
+          is_terminal() {
+            case "$1" in
+              live|deactivated|failed|canceled) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          fetch_deploy_json() {
+            # Intenta /v1/deploys/{id}
+            HTTP_CODE=$(mktemp); RESP_BODY=$(mktemp)
+            curl -sS "https://api.render.com/v1/deploys/$1" \
+              -H "Authorization: Bearer ${RENDER_API_KEY}" \
+              -H "Accept: application/json" \
+              -w "%{http_code}" -o "$RESP_BODY" > "$HTTP_CODE" || return 99
+            code=$(cat "$HTTP_CODE")
+            if [ "$code" = "404" ]; then
+              # Fallback: /v1/services/{service}/deploys/{id}
+              curl -sS "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys/$1" \
+                -H "Authorization: Bearer ${RENDER_API_KEY}" \
+                -H "Accept: application/json" \
+                -w "%{http_code}" -o "$RESP_BODY" > "$HTTP_CODE" || return 99
+              code=$(cat "$HTTP_CODE")
+              if [ "$code" = "404" ]; then
+                # Fallback 2: ultimo deploy del servicio
+                curl -sS "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys?limit=1" \
+                  -H "Authorization: Bearer ${RENDER_API_KEY}" \
+                  -H "Accept: application/json" \
+                  -w "%{http_code}" -o "$RESP_BODY" > "$HTTP_CODE" || return 99
+                code=$(cat "$HTTP_CODE")
+                if [ "$code" -ge 200 ] && [ "$code" -lt 300 ]; then
+                  NEW_ID=$(python -c "import sys,json; d=json.load(open('$RESP_BODY','rb')); print((d[0]['id'] if isinstance(d,list) and d else d.get('id','')))")
+                  if [ -n "$NEW_ID" ] && [ "$NEW_ID" != "$1" ]; then
+                    echo "⚠️  Usando último deploy del servicio: $NEW_ID (fallback)"
+                    echo "$NEW_ID" > "$GITHUB_WORKSPACE/.effective_deploy_id"
+                    # Reconsulta con el nuevo ID
+                    curl -sS "https://api.render.com/v1/deploys/$NEW_ID" \
+                      -H "Authorization: Bearer ${RENDER_API_KEY}" \
+                      -H "Accept: application/json" \
+                      -w "%{http_code}" -o "$RESP_BODY" > "$HTTP_CODE" || return 99
+                    code=$(cat "$HTTP_CODE")
+                  fi
+                fi
+              fi
+            fi
+
+            echo "$code"
+            echo "$RESP_BODY"
+            return 0
+          }
+
+          EFFECTIVE_ID="${DEPLOY_ID}"
+          echo "$EFFECTIVE_ID" > "$GITHUB_WORKSPACE/.effective_deploy_id"
+
+          while : ; do
+            CODE_AND_FILE=$(fetch_deploy_json "$EFFECTIVE_ID")
+            RET=$?
+            if [ $RET -eq 99 ]; then
+              echo "❌ Error de red/HTTP al consultar deploy"
+              exit 1
+            fi
+
+            CODE=$(echo "$CODE_AND_FILE" | head -n1)
+            RESP_FILE=$(echo "$CODE_AND_FILE" | tail -n1)
+
+            if [ "$CODE" -lt 200 ] || [ "$CODE" -ge 300 ]; then
+              echo "❌ Status no-2xx al consultar estado ($CODE)"
+              head -c 600 "$RESP_FILE" || true
+              exit 1
+            fi
+
+            # Si en fallback cambiamos de ID, lo tomamos
+            if [ -f "$GITHUB_WORKSPACE/.effective_deploy_id" ]; then
+              NEW_EFF_ID=$(cat "$GITHUB_WORKSPACE/.effective_deploy_id")
+              if [ "$NEW_EFF_ID" != "$EFFECTIVE_ID" ]; then
+                EFFECTIVE_ID="$NEW_EFF_ID"
+                echo "↪️  Continuando con deploy id efectivo: $EFFECTIVE_ID"
+              fi
+            fi
+
+            STATUS=$(python -c "import sys,json; print(json.load(open('$RESP_FILE','rb')).get('status',''))")
+            PHASE=$(python -c "import sys,json; print(json.load(open('$RESP_FILE','rb')).get('phase',''))")
+            echo "⏳ Estado: $STATUS | Fase: $PHASE (t=${ELAPSED}s)"
+
+            if [ "$STATUS" = "live" ]; then
+              echo "✅ Deploy LIVE (id: $EFFECTIVE_ID)"
+              exit 0
+            fi
+
+            if is_terminal "$STATUS"; then
+              echo "❌ Deploy en estado terminal: $STATUS"
+              echo "Detalle (primeras 600 chars):"
+              head -c 600 "$RESP_FILE" || true
+              exit 1
+            fi
+
+            sleep "$INTERVAL"
+            ELAPSED=$((ELAPSED+INTERVAL))
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "⏱️ Timeout esperando LIVE"
+              echo "Última respuesta:"
+              head -c 600 "$RESP_FILE" || true
+              exit 1
+            fi
+          done
+
