@@ -1,3 +1,4 @@
+# pylint: disable=W1514
 """
 Módulo para manejar la carga y guardado de pagos en un archivo JSON.
 """
