@@ -95,5 +95,50 @@ async def leer_archivo(nombre_archivo: str):
     return {"nombre_archivo": nombre_archivo, "contenido": contenido}
 
 
+### fin metodos de prueba
+
+### POST /payments/{payment_id}
+@app.post("/payments/{payment_id}")
+async def register_payment(payment_id: str, amount: float, payment_method: str):
+    """
+    Registra un pago con su información.
+    """
+    save_payment(payment_id, amount, payment_method, STATUS_REGISTRADO)
+    return {"message": f"Pago con ID {payment_id} registrado exitosamente."}
 
 
+
+
+@app.post("/payments/{payment_id}/update")
+async def update_payment(payment_id: str, amount: float, payment_method: str):
+    """
+    Actualiza la información de un pago existente.
+    """
+    payment_data = load_payment(payment_id)
+    payment_data[AMOUNT] = amount
+    payment_data[PAYMENT_METHOD] = payment_method
+    save_payment_data(payment_id, payment_data)
+    return {"message": f"Pago con ID {payment_id} actualizado exitosamente."}
+
+
+
+@app.post("/payments/{payment_id}/pay")
+async def pay_payment(payment_id: str):
+    """
+    Marca un pago como pagado.
+    """
+    payment_data = load_payment(payment_id)
+    payment_data[STATUS] = STATUS_PAGADO
+    save_payment_data(payment_id, payment_data)
+    return {"message": f"Pago con ID {payment_id} marcado como pagado."}
+
+
+@app.post("/payments/{payment_id}/revert")
+async def revert_payment(payment_id: str):
+    """
+    Revierte un pago al estado registrado.
+    """
+    payment_data = load_payment(payment_id)
+    payment_data[STATUS] = STATUS_REGISTRADO
+    save_payment_data(payment_id, payment_data)
+    return {"message": f"Pago con ID {payment_id} revertido al estado registrado."}
