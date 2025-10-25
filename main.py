@@ -87,17 +87,20 @@ async def update_payment(payment_id: str, amount: float, payment_method: str):
     return {"message": f"Pago con ID {payment_id} actualizado exitosamente."}
 
 
-
 @app.post("/payments/{payment_id}/pay")
 async def pay_payment(payment_id: str):
     """
     Marca un pago como pagado.
+    Para el Método de Pago 2 (PayPal) se verifica que el monto sea menor de $5000.
+    Si el pago con PayPal es >= 5000 se marca como PAGADO.
     """
     payment_data = load_payment(payment_id)
-    payment_data[STATUS] = STATUS_PAGADO
-    save_payment_data(payment_id, payment_data)
-    return {"message": f"Pago con ID {payment_id} marcado como pagado."}
+    amount = float(payment_data.get(AMOUNT, 0))
+    method = str(payment_data.get(PAYMENT_METHOD, "")).strip().lower()
 
+    # Considerar tanto "2" como "paypal" como identificadores del método PayPal
+    if method in ("2", "paypal"):
+        if amount >= 5000.0:
 
 @app.post("/payments/{payment_id}/revert")
 async def revert_payment(payment_id: str):
