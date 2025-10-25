@@ -26,7 +26,9 @@ def setup_and_teardown():
         json.dump(test_data, f)
     yield
     # Teardown: Eliminar el archivo de datos de prueba después de las pruebas
-    os.remove("data.json")
+    ## generamos un data.json vacio
+    with open("data.json", "w") as f:
+        json.dump({}, f)
 
 def test_obtener_pagos():
     """Prueba para el endpoint GET /payments"""
