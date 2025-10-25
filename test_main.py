@@ -42,7 +42,31 @@ def test_obtener_pagos():
     assert data["payments"]["2"]["payment_method"] == "paypal"
     assert data["payments"]["2"]["status"] == "FALLIDO"
 
+def test_register_payment():
+    """Prueba para el endpoint POST /payments/{payment_id}"""
+    response = client.post("/payments/3", params={"amount": 200, "payment_method": "credit_card"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["message"] == "Pago con ID 3 registrado exitosamente."
+    # Verificar que el pago se haya guardado correctamente
+    response = client.get("/payments")
+    payments = response.json()["payments"]
+    assert "3" in payments
+    assert payments["3"]["amount"] == 200
+    assert payments["3"]["payment_method"] == "credit_card"
+    assert payments["3"]["status"] == "REGISTRADO"
 
+def test_update_payment():
+    """Prueba para el endpoint POST /payments/{payment_id}/update"""
+    response = client.post("/payments/1/update", params={"amount": 150, "payment_method": "paypal"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["message"] == "Pago con ID 1 actualizado exitosamente."
+    # Verificar que el pago se haya actualizado correctamente
+    response = client.get("/payments")
+    payments = response.json()["payments"]
+    assert payments["1"]["amount"] == 150
+    assert payments["1"]["payment_method"] == "paypal"
 
 
 # Nota: Asegurarse de que el directorio ./files exista antes de ejecutar las pruebas
