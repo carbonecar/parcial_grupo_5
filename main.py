@@ -4,16 +4,9 @@
 import json
 import os
 from fastapi import FastAPI
+from credit_card_payment_strategy import CreditCardPaymentStrategy
+from paypal_payment_strategy import PayPalPaymentStrategy
 
-STATUS = "status"
-AMOUNT = "amount"
-PAYMENT_METHOD = "payment_method"
-
-STATUS_REGISTRADO = "REGISTRADO"
-STATUS_PAGADO = "PAGADO"
-STATUS_FALLIDO = "FALLIDO"
-
-DATA_PATH = "data.json"
 
 
 app = FastAPI(
@@ -92,14 +85,29 @@ async def pay_payment(payment_id: str):
     """
     Marca un pago como pagado.
     Para el Método de Pago 2 (PayPal) se verifica que el monto sea menor de $5000.
-    Si el pago con PayPal es >= 5000 se marca como PAGADO.
+    Si el pago con PayPal es <5000 se marca como PAGADO.
     """
+
+    #### Creamos un mapa con las dos estrategia de paga para credit_card y paypal
+    ### Esto podría ser una factory pero por temas de tiempo lo dejamos así
+    payment_strategies = {
+        "credit_card":CreditCardPaymentStrategy(),
+        "paypal": PayPalPaymentStrategy(),
+    }
     payment_data = load_payment(payment_id)
+    payment_method=payment_data[PAYMENT_METHOD]
+    all_payments = load_all_payments()
+    payment_strategy=payment_strategies[payment_method]
+
+    validacion_monto=payment_strategy.process_payment(payment_data))
     ## verifico que si el metodo de pago es tarjeta de credito el monto no sea menor a 10.000 y Validamos que no exista mas de un pago con estado registrado
-    if payment_data[PAYMENT_METHOD] == "credit_card" and payment_data[AMOUNT] < 10000:
+    if validacion_monto:
+        payment_data[STATUS] = STATUS_PAGADO
+        save_payment_data(payment_id, payment_data)
+    else:
         payment_data[STATUS] = STATUS_FALLIDO
         save_payment_data(payment_id, payment_data)
-        return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para tarjeta de crédito."}
+        return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para el metodo de pago seleccionado"}
 
     ## Validamos que no exista mas de un pago con estado registrado
     all_payments = load_all_payments()
