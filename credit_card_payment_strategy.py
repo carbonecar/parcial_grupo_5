@@ -1,15 +1,18 @@
 from payment_strategy import PaymentStrategy
 
+from payments_handler import STATUS, STATUS_REGISTRADO, STATUS_FALLIDO, save_payment_data, load_all_payments
+
 class CreditCardPaymentStrategy(PaymentStrategy):
 
-    def process_payment(self, payment_data,all_payments) -> str:
+    def process_payment(self, payment_data,payment_id):
         """Procesa el pago con tarjeta de crédito.
         
         Si el monto es menor a $10,000, el pago falla.
         Si el monto es $10,000 o más, el pago es exitoso.
         """
         amount=payment_data['amount']
-        if amount < 10000:
+        all_payments=load_all_payments()
+        if amount > 10000:
            return False
         else:
             for pid, pdata in all_payments.items():

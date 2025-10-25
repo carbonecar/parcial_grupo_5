@@ -7,7 +7,19 @@ from fastapi import FastAPI
 from credit_card_payment_strategy import CreditCardPaymentStrategy
 from paypal_payment_strategy import PayPalPaymentStrategy
 
-
+from payments_handler import (
+    DATA_PATH,
+    STATUS,
+    AMOUNT,
+    PAYMENT_METHOD,
+    STATUS_REGISTRADO,
+    STATUS_PAGADO,
+    STATUS_FALLIDO,
+    load_all_payments,
+    load_payment,
+    save_payment_data,
+    save_payment,
+)
 
 app = FastAPI(
     title="Parcial Grupo 5",
@@ -15,35 +27,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-def load_all_payments():
-    with open(DATA_PATH, "r") as f:
-        data = json.load(f)
-    return data
-
-
-def save_all_payments(data):
-    with open(DATA_PATH, "w") as f:
-        json.dump(data, f, indent=4)
-
-
-def load_payment(payment_id):
-    data = load_all_payments()[payment_id]
-    return data
-
-
-def save_payment_data(payment_id, data):
-    all_data = load_all_payments()
-    all_data[str(payment_id)] = data
-    save_all_payments(all_data)
-
-
-def save_payment(payment_id, amount, payment_method, status):
-    data = {
-        AMOUNT: amount,
-        PAYMENT_METHOD: payment_method,
-        STATUS: status,
-    }
-    save_payment_data(payment_id, data)
     
 @app.get("/payments")
 async def obtener_pagos():
@@ -86,6 +69,8 @@ async def pay_payment(payment_id: str):
     Marca un pago como pagado.
     Para el Método de Pago 2 (PayPal) se verifica que el monto sea menor de $5000.
     Si el pago con PayPal es <5000 se marca como PAGADO.
+    Para el método de pago 1 (Tarjeta de Crédito) se verifica que el monto sea menor de $10,000.
+    Si el pago con Tarjeta de Crédito es <10,000 se marca como PAGADO
     """
 
     #### Creamos un mapa con las dos estrategia de paga para credit_card y paypal
@@ -95,44 +80,20 @@ async def pay_payment(payment_id: str):
         "paypal": PayPalPaymentStrategy(),
     }
     payment_data = load_payment(payment_id)
-    payment_method=payment_data[PAYMENT_METHOD]
-    all_payments = load_all_payments()
-    payment_strategy=payment_strategies[payment_method]
+    payment_strategy=payment_strategies[payment_data[PAYMENT_METHOD]]
 
-    validacion_monto=payment_strategy.process_payment(payment_data))
+    validacion_monto=payment_strategy.process_payment(payment_data,payment_id)
     ## verifico que si el metodo de pago es tarjeta de credito el monto no sea menor a 10.000 y Validamos que no exista mas de un pago con estado registrado
     if validacion_monto:
         payment_data[STATUS] = STATUS_PAGADO
         save_payment_data(payment_id, payment_data)
+        return {"message": f"Pago con ID {payment_id} pagado exitosamente."}
     else:
         payment_data[STATUS] = STATUS_FALLIDO
         save_payment_data(payment_id, payment_data)
-        return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para el metodo de pago seleccionado"}
+        return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para el metodo de pago seleccionado o existe otro pago registrado por procesar."}
 
-    ## Validamos que no exista mas de un pago con estado registrado
-    all_payments = load_all_payments()
-    for pid, pdata in all_payments.items():
-        if pid != payment_id and pdata[STATUS] == STATUS_REGISTRADO:
-            payment_data[STATUS] = STATUS_FALLIDO
-            save_payment_data(payment_id, payment_data)
-            return {"message": f"Pago con ID {payment_id} fallido. Ya existe un pago registrado pendiente."}
-
-    payment_data[STATUS] = STATUS_PAGADO
-    save_payment_data(payment_id, payment_data)
-    amount = float(payment_data.get(AMOUNT, 0))
-    method = str(payment_data.get(PAYMENT_METHOD, "")).strip().lower()
-
-    # Considerar tanto "2" como "paypal" como identificadores del método PayPal
-    if method in ("2", "paypal"):
-        if amount >= 5000:
-            payment_data[STATUS] = STATUS_PAGADO
-        else:
-            payment_data[STATUS] = STATUS_FALLIDO
-            save_payment_data(payment_id, payment_data)
-            return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para PayPal."}
     
-    return {"message": f"Pago con ID {payment_id} marcado como pagado."}
-
 @app.post("/payments/{payment_id}/revert")
 async def revert_payment(payment_id: str):
     """
