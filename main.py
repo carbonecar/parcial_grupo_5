@@ -63,40 +63,6 @@ async def obtener_pagos():
     return {"payments": payments}
 
 
-### metdos de prueba
-@app.get("/")
-async def prueba_root():
-    """
-    Endpoint de prueba en la raíz
-    """
-    return {"message": "Accediste al endpoint de prueba"}
-
-
-@app.get("/files")
-async def listar_archivos():
-    """
-    Develve los archivos del directorio
-    """
-    archivos = os.listdir("./files")
-    return {"archivos": archivos}
-
-@app.get("/files/{nombre_archivo}")
-async def leer_archivo(nombre_archivo: str):
-    """
-    Lee el contenido de un archivo específico
-    """
-    ruta_archivo = os.path.join("./files", nombre_archivo)
-
-    if not os.path.isfile(ruta_archivo):
-        return {"error": "El archivo no existe"}
-
-    with open(ruta_archivo, "r") as archivo:
-        contenido = archivo.read()    
-    return {"nombre_archivo": nombre_archivo, "contenido": contenido}
-
-
-### fin metodos de prueba
-
 ### POST /payments/{payment_id}
 @app.post("/payments/{payment_id}")
 async def register_payment(payment_id: str, amount: float, payment_method: str):
