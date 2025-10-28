@@ -16,6 +16,9 @@ Flujo de trabajo:
 - Cuando se genera el merge a main se vuelve a ejecutar el pipeline de CI
 - Cuando se taguea se deploya automaticamente
 - Se incluye pylint para el análisis de código estatico
+
+La api queda deployada en https://parcial-grupo-5.onrender.com/docs
+
 #### Para deployar se agregan las credenciales en github como secret
 
 - Agregar las secrets a github 
