@@ -2,10 +2,11 @@
     Servidor de ejemplo para la práctica de FastAPI
 """
 import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
+from config import settings
 from credit_card_payment_strategy import CreditCardPaymentStrategy
 from paypal_payment_strategy import PayPalPaymentStrategy
-
 from payments_handler import (
     DATA_PATH,
     STATUS,
@@ -20,10 +21,12 @@ from payments_handler import (
     save_payment,
 )
 
+load_dotenv()
+
 app = FastAPI(
-    title="Parcial Grupo 5",
+    title=settings.app_name,
     description="Parcial Grupo 5 - Ingeniería de Software",
-    version="1.0.0"
+    version=settings.api_version
 )
 
     
