@@ -13,9 +13,9 @@ Se deshabilita el autodeploy y queda habilitado para deployar cuando se hace un 
 Flujo de trabajo: 
 - Se genera el branch y el pr
 - Se ejecutan los pipelines de CI
-- Cuando se genera el merge se vuelve a ejecutar el pipeline de CI
+- Cuando se genera el merge a main se vuelve a ejecutar el pipeline de CI
 - Cuando se taguea se deploya automaticamente
-
+- Se incluye pylint para el análisis de código estatico
 #### Para deployar se agregan las credenciales en github como secret
 
 - Agregar las secrets a github 
@@ -32,4 +32,5 @@ Observacion: Si el servicio esta bajo. Hacer un tag y deployar
 
  ### Test
  Se corren automaticamente o con el comando ``` pytest ```
+
  Para levantar la api local solo se necesita hacer ``` fastapi dev main.py ```

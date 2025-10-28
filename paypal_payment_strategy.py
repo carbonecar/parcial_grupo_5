@@ -1,3 +1,6 @@
+"""
+Estrategia de pago para PayPal.
+"""
 from payment_strategy import PaymentStrategy
 
 from payments_handler import AMOUNT
@@ -17,4 +20,4 @@ class PayPalPaymentStrategy(PaymentStrategy):
             return True
         else:
             return False
-        
+

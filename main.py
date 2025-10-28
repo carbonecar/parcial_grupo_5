@@ -29,7 +29,7 @@ app = FastAPI(
     version=settings.api_version
 )
 
-    
+
 @app.get("/payments")
 async def obtener_pagos():
     """
@@ -95,7 +95,7 @@ async def pay_payment(payment_id: str):
         save_payment_data(payment_id, payment_data)
         return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para el metodo de pago seleccionado o existe otro pago registrado por procesar."}
 
-    
+
 @app.post("/payments/{payment_id}/revert")
 async def revert_payment(payment_id: str):
     """
