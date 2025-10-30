@@ -3,7 +3,7 @@
 """
 import json
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 STATUS = "status"
 AMOUNT = "amount"
@@ -69,6 +69,12 @@ async def register_payment(payment_id: str, amount: float, payment_method: str):
     """
     Registra un pago con su información.
     """
+    # Verificar si el pago ya existe
+    if os.path.isfile(DATA_PATH):
+        payments = load_all_payments()
+        if payment_id in payments:
+            raise HTTPException(status_code=400, detail=f"El pago con ID {payment_id} ya existe.")
+    
     save_payment(payment_id, amount, payment_method, STATUS_REGISTRADO)
     return {"message": f"Pago con ID {payment_id} registrado exitosamente."}
 
@@ -101,6 +107,7 @@ async def pay_payment(payment_id: str):
     # Considerar tanto "2" como "paypal" como identificadores del método PayPal
     if method in ("2", "paypal"):
         if amount >= 5000.0:
+            pass
 
 @app.post("/payments/{payment_id}/revert")
 async def revert_payment(payment_id: str):

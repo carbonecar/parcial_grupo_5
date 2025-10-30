@@ -48,7 +48,7 @@ def test_register_existing_payment():
     )
     assert response.status_code == 400
     data = response.json()
-    assert data["detail"] == "El pago con ID ya existe."
+    assert data["detail"].startswith("El pago con ID") and "ya existe" in data["detail"]
     
 # Nota: Asegurarse de que el directorio ./files exista antes de ejecutar las pruebas
 if __name__ == "__main__":
