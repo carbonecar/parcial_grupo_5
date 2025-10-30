@@ -1,27 +1,25 @@
 """
     Servidor de ejemplo para la práctica de FastAPI
 """
-import os
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from config import settings
 from credit_card_payment_strategy import CreditCardPaymentStrategy
 from paypal_payment_strategy import PayPalPaymentStrategy
+from file_payment_repository import FilePaymentRepository
 from payments_handler import (
-    DATA_PATH,
     STATUS,
     AMOUNT,
     PAYMENT_METHOD,
     STATUS_REGISTRADO,
     STATUS_PAGADO,
     STATUS_FALLIDO,
-    load_all_payments,
-    load_payment,
-    save_payment_data,
-    save_payment,
 )
 
 load_dotenv()
+
+# Instancia global del repositorio
+repository = FilePaymentRepository()
 
 app = FastAPI(
     title=settings.app_name,
@@ -35,22 +33,22 @@ async def obtener_pagos():
     """
     Obtiene todos los pagos del sistema.
     """
-    if not os.path.isfile(DATA_PATH):
-        return {"payments": {}}
-    payments = load_all_payments()
+    payments = repository.get_all()
     return {"payments": payments}
 
 
-### POST /payments/{payment_id}
 @app.post("/payments/{payment_id}")
 async def register_payment(payment_id: str, amount: float, payment_method: str):
     """
     Registra un pago con su información.
     """
-    save_payment(payment_id, amount, payment_method, STATUS_REGISTRADO)
+    payment_data = {
+        AMOUNT: amount,
+        PAYMENT_METHOD: payment_method,
+        STATUS: STATUS_REGISTRADO,
+    }
+    repository.save(payment_id, payment_data)
     return {"message": f"Pago con ID {payment_id} registrado exitosamente."}
-
-
 
 
 @app.post("/payments/{payment_id}/update")
@@ -58,10 +56,13 @@ async def update_payment(payment_id: str, amount: float, payment_method: str):
     """
     Actualiza la información de un pago existente.
     """
-    payment_data = load_payment(payment_id)
+    payment_data = repository.get_by_id(payment_id)
+    if payment_data is None:
+        raise HTTPException(status_code=404, detail=f"Pago con ID {payment_id} no encontrado")
+
     payment_data[AMOUNT] = amount
     payment_data[PAYMENT_METHOD] = payment_method
-    save_payment_data(payment_id, payment_data)
+    repository.save(payment_id, payment_data)
     return {"message": f"Pago con ID {payment_id} actualizado exitosamente."}
 
 
@@ -75,24 +76,27 @@ async def pay_payment(payment_id: str):
     Si el pago con Tarjeta de Crédito es <10,000 se marca como PAGADO
     """
 
-    #### Creamos un mapa con las dos estrategia de paga para credit_card y paypal
-    ### Esto podría ser una factory pero por temas de tiempo lo dejamos así
+    # Mapa de estrategias de pago
     payment_strategies = {
-        "credit_card":CreditCardPaymentStrategy(),
+        "credit_card": CreditCardPaymentStrategy(),
         "paypal": PayPalPaymentStrategy(),
     }
-    payment_data = load_payment(payment_id)
-    payment_strategy=payment_strategies[payment_data[PAYMENT_METHOD]]
 
-    validacion_monto=payment_strategy.process_payment(payment_data,payment_id)
-    ## verifico que si el metodo de pago es tarjeta de credito el monto no sea menor a 10.000 y Validamos que no exista mas de un pago con estado registrado
+    payment_data = repository.get_by_id(payment_id)
+    if payment_data is None:
+        raise HTTPException(status_code=404, detail=f"Pago con ID {payment_id} no encontrado")
+
+    payment_strategy = payment_strategies[payment_data[PAYMENT_METHOD]]
+
+    validacion_monto = payment_strategy.process_payment(payment_data, payment_id)
+
     if validacion_monto:
         payment_data[STATUS] = STATUS_PAGADO
-        save_payment_data(payment_id, payment_data)
+        repository.save(payment_id, payment_data)
         return {"message": f"Pago con ID {payment_id} pagado exitosamente."}
     else:
         payment_data[STATUS] = STATUS_FALLIDO
-        save_payment_data(payment_id, payment_data)
+        repository.save(payment_id, payment_data)
         return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para el metodo de pago seleccionado o existe otro pago registrado por procesar."}
 
 
@@ -101,7 +105,10 @@ async def revert_payment(payment_id: str):
     """
     Revierte un pago al estado registrado.
     """
-    payment_data = load_payment(payment_id)
+    payment_data = repository.get_by_id(payment_id)
+    if payment_data is None:
+        raise HTTPException(status_code=404, detail=f"Pago con ID {payment_id} no encontrado")
+
     payment_data[STATUS] = STATUS_REGISTRADO
-    save_payment_data(payment_id, payment_data)
+    repository.save(payment_id, payment_data)
     return {"message": f"Pago con ID {payment_id} revertido al estado registrado."}
