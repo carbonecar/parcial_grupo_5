@@ -3,7 +3,7 @@
 """
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from config import settings
 from credit_card_payment_strategy import CreditCardPaymentStrategy
 from paypal_payment_strategy import PayPalPaymentStrategy
