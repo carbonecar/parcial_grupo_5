@@ -43,6 +43,16 @@ def test_obtener_pagos():
     assert data["payments"]["2"]["payment_method"] == "paypal"
     assert data["payments"]["2"]["status"] == "FALLIDO"
 
+def test_register_existing_payment():
+    #evita registrar un pago con un ID ya existente
+    response = client.post(
+        "/payments/1",
+        params={"amount": 999, "payment_method": "debit_card"}
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert data["detail"].startswith("El pago con ID") and "ya existe" in data["detail"]
+    
 def test_register_payment():
     """Prueba para el endpoint POST /payments/{payment_id}"""
     response = client.post("/payments/3", params={"amount": 200, "payment_method": "credit_card"})

@@ -47,6 +47,12 @@ async def register_payment(payment_id: str, amount: float, payment_method: str):
     """
     Registra un pago con su información.
     """
+    # Verificar si el pago ya existe
+    if os.path.isfile(DATA_PATH):
+        payments = load_all_payments()
+        if payment_id in payments:
+            raise HTTPException(status_code=400, detail=f"El pago con ID {payment_id} ya existe.")
+    
     save_payment(payment_id, amount, payment_method, STATUS_REGISTRADO)
     return {"message": f"Pago con ID {payment_id} registrado exitosamente."}
 
