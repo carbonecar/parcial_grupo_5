@@ -1,6 +1,7 @@
 """
     Servidor de ejemplo para la práctica de FastAPI
 """
+from strategy_factory import Strategyfactory
 import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -81,14 +82,8 @@ async def pay_payment(payment_id: str):
     Si el pago con Tarjeta de Crédito es <10,000 se marca como PAGADO
     """
 
-    #### Creamos un mapa con las dos estrategia de paga para credit_card y paypal
-    ### Esto podría ser una factory pero por temas de tiempo lo dejamos así
-    payment_strategies = {
-        "credit_card":CreditCardPaymentStrategy(),
-        "paypal": PayPalPaymentStrategy(),
-    }
     payment_data = load_payment(payment_id)
-    payment_strategy=payment_strategies[payment_data[PAYMENT_METHOD]]
+    payment_strategy=Strategyfactory.get_strategy(payment_data[PAYMENT_METHOD])
 
     validacion_monto=payment_strategy.process_payment(payment_data,payment_id)
     ## verifico que si el metodo de pago es tarjeta de credito el monto no sea menor a 10.000 y Validamos que no exista mas de un pago con estado registrado
