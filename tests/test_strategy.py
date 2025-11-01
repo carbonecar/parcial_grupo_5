@@ -1,8 +1,8 @@
 
 import pytest
-from strategy_factory import Strategyfactory
-from credit_card_payment_strategy import CreditCardPaymentStrategy
-from paypal_payment_strategy import PayPalPaymentStrategy
+from app.application.strategy_factory import Strategyfactory
+from app.domain.credit_card_payment_strategy import CreditCardPaymentStrategy
+from app.domain.paypal_payment_strategy import PayPalPaymentStrategy
 
 def test_credit_card_payment_strategy_success():
     """Test para la strategy solamente"""
