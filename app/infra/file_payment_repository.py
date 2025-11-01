@@ -11,8 +11,9 @@ class FilePaymentRepository(PaymentRepository):
     """
     Implementación del repositorio usando archivos JSON para persistencia.
     """
+    DATA_PATH = "data.json"
 
-    def __init__(self, data_path: str = "data.json"):
+    def __init__(self, data_path: str = DATA_PATH):
         """
         Inicializa el repositorio de archivos.
 

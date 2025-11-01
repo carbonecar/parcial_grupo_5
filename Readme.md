@@ -50,3 +50,8 @@ No se modela el dominio por falta de tiempo y deberían abstrarse los DTO en cad
  Se corren automaticamente o con el comando ``` pytest ```
 
  Para levantar la api local solo se necesita hacer ``` fastapi dev main.py ```
+
+
+### Supuestos
+Como en el enunciado no lo declara no se supone que existe un flujo entre los estados, salvo el descripto en las operaciones
+por lo tanto no se implementa una máquina de estados para validar las transiciones
