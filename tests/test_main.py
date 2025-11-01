@@ -2,8 +2,8 @@
 import json
 import pytest
 from fastapi.testclient import TestClient
-from main import app
-from file_payment_repository import FilePaymentRepository
+from app.main import app
+from app.infra.file_payment_repository import FilePaymentRepository
 client = TestClient(app)
 @pytest.fixture(scope="module", autouse=True)
 def setup_and_teardown():

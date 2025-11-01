@@ -2,8 +2,8 @@
 """
     Estrategia de pago con tarjeta de crédito.
 """
-from payment_strategy import PaymentStrategy
-from payments_handler import STATUS, STATUS_REGISTRADO, STATUS_FALLIDO, save_payment_data, load_all_payments
+from app.domain.payment_strategy import PaymentStrategy
+from app.application.payments_handler import STATUS, STATUS_REGISTRADO, STATUS_FALLIDO, save_payment_data, load_all_payments
 class CreditCardPaymentStrategy(PaymentStrategy):
     """
         Estrategia de pago con tarjeta de crédito. 

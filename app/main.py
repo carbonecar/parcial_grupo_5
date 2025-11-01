@@ -3,10 +3,10 @@
 """
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from strategy_factory import Strategyfactory
-from config import settings
-from file_payment_repository import FilePaymentRepository
-from payments_handler import (
+from app.application.strategy_factory import Strategyfactory
+from app.infra.file_payment_repository import FilePaymentRepository
+
+from app.application.payments_handler import (
     STATUS,
     AMOUNT,
     PAYMENT_METHOD,
@@ -14,6 +14,7 @@ from payments_handler import (
     STATUS_PAGADO,
     STATUS_FALLIDO,
 )
+from config import settings
 
 load_dotenv()
 

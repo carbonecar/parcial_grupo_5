@@ -1,8 +1,8 @@
 """
 factory para obtener la strategy de pago adecuada según el método de pago.
 """
-from credit_card_payment_strategy import CreditCardPaymentStrategy
-from paypal_payment_strategy import PayPalPaymentStrategy
+from app.domain.credit_card_payment_strategy import CreditCardPaymentStrategy
+from app.domain.paypal_payment_strategy import PayPalPaymentStrategy
 
 class Strategyfactory:
     """

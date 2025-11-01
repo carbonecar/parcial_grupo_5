@@ -4,7 +4,7 @@ Implementación del repositorio de pagos usando almacenamiento en archivo JSON.
 import json
 import os
 from typing import Dict, Optional
-from payment_repository import PaymentRepository
+from app.ports.payment_repository import PaymentRepository
 
 
 class FilePaymentRepository(PaymentRepository):
