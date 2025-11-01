@@ -61,11 +61,6 @@ async def update_payment(payment_id: str, amount: float, payment_method: str):
 
     payment_data[AMOUNT] = amount
     payment_data[PAYMENT_METHOD] = payment_method
-    strategy=Strategyfactory.get_strategy(payment_method)
-    if strategy is None:
-        raise HTTPException(status_code=400, detail=f"Método de pago {payment_method} no soportado.")
-    if not strategy.process_payment(payment_data, payment_id):
-        raise HTTPException(status_code=400, detail=f"El pago con ID {payment_id} no es válido con el método de pago {payment_method}.")
     repository.save(payment_id, payment_data)
     return {"message": f"Pago con ID {payment_id} actualizado exitosamente."}
 
@@ -96,7 +91,8 @@ async def pay_payment(payment_id: str):
     else:
         payment_data[STATUS] = STATUS_FALLIDO
         repository.save(payment_id, payment_data)
-        return {"message": f"Pago con ID {payment_id} fallido: monto insuficiente para el metodo de pago seleccionado o existe otro pago registrado por procesar."}
+        raise HTTPException(status_code=422,
+                            detail=f"Pago con ID {payment_id} fallido: monto incorrecto para el metodo de pago seleccionado o existe otro pago registrado por procesar.")
 
 
 @app.post("/payments/{payment_id}/revert")
