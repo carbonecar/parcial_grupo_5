@@ -30,7 +30,12 @@ La api queda deployada en https://parcial-grupo-5.onrender.com/docs
 
 Observacion: Si el servicio esta bajo. Hacer un tag y deployar
 ### Ejecutar la aplicacion local
- en el direcotrio raiz ejecutar ```fastapi dev app/main.py```
+ en el direcotrio raiz ejecutar:
+ 
+ ```fastapi dev app/main.py```
+ o bien 
+
+ ``` uvicorn app.main:app --reload --port 8000 ```
 
 ### Decisiones de diseño. 
 - Usamos strategy para implementar la lógica de cada uno de los tipos de pago.

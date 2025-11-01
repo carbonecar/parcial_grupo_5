@@ -12,4 +12,4 @@ services:
         value: 0.0.0.0
       - key: DEBUG
         value: 0
-    #healthCheckPath: /health
+    healthCheckPath: /health
