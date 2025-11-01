@@ -19,6 +19,7 @@ Flujo de trabajo:
 
 La api queda deployada en https://parcial-grupo-5.onrender.com/docs
 
+![Flujo de pipeline](./docs/cd-release.png)
 
 
 #### Para deployar se agregan las credenciales en github como secret
