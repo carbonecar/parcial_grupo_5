@@ -40,3 +40,6 @@ Observacion: Si el servicio esta bajo. Hacer un tag y deployar
  Se corren automaticamente o con el comando ``` pytest ```
 
  Para levantar la api local solo se necesita hacer ``` fastapi dev main.py ```
+
+
+ ### Supuestos 

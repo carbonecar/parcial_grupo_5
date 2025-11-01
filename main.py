@@ -68,6 +68,11 @@ async def update_payment(payment_id: str, amount: float, payment_method: str):
     payment_data = load_payment(payment_id)
     payment_data[AMOUNT] = amount
     payment_data[PAYMENT_METHOD] = payment_method
+    strategy=Strategyfactory.get_strategy(payment_method)
+    if strategy is None:
+        raise HTTPException(status_code=400, detail=f"Método de pago {payment_method} no soportado.")
+    if not strategy.process_payment(payment_data, payment_id):
+        raise HTTPException(status_code=400, detail=f"El pago con ID {payment_id} no es válido con el método de pago {payment_method}.")
     save_payment_data(payment_id, payment_data)
     return {"message": f"Pago con ID {payment_id} actualizado exitosamente."}
 
