@@ -20,7 +20,7 @@ app = FastAPI(
 
 app.include_router(payment_router)
 
-@app.get("/")
+@app.get("/health")
 async def health():
     """Endpoint raíz que devuelve un mensaje de bienvenida."""
     return {"message": "Welcome to the Payments API!"}

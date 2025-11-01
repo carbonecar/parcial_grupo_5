@@ -10,7 +10,7 @@ from app.application.payments_handler import (
     STATUS_FALLIDO,
 )
 
-router = APIRouter(prefix="/payments", tags=["Payments"])
+router = APIRouter(tags=["Payments"])
 repository = FilePaymentRepository()
 
 @router.get("/payments")
