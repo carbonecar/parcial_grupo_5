@@ -3,9 +3,8 @@
 """
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from strategy_factory import Strategyfactory
 from config import settings
-from credit_card_payment_strategy import CreditCardPaymentStrategy
-from paypal_payment_strategy import PayPalPaymentStrategy
 from file_payment_repository import FilePaymentRepository
 from payments_handler import (
     STATUS,
@@ -42,12 +41,11 @@ async def register_payment(payment_id: str, amount: float, payment_method: str):
     """
     Registra un pago con su información.
     """
-    payment_data = {
-        AMOUNT: amount,
-        PAYMENT_METHOD: payment_method,
-        STATUS: STATUS_REGISTRADO,
-    }
-    repository.save(payment_id, payment_data)
+    # Verificar si el pago ya existe
+    payments = repository.get_all()
+    if payment_id in payments:
+        raise HTTPException(status_code=400, detail=f"El pago con ID {payment_id} ya existe.")
+    repository.save(payment_id, {"amount": amount, "payment_method": payment_method, "status": STATUS_REGISTRADO})
     return {"message": f"Pago con ID {payment_id} registrado exitosamente."}
 
 
@@ -76,17 +74,12 @@ async def pay_payment(payment_id: str):
     Si el pago con Tarjeta de Crédito es <10,000 se marca como PAGADO
     """
 
-    # Mapa de estrategias de pago
-    payment_strategies = {
-        "credit_card": CreditCardPaymentStrategy(),
-        "paypal": PayPalPaymentStrategy(),
-    }
 
     payment_data = repository.get_by_id(payment_id)
     if payment_data is None:
         raise HTTPException(status_code=404, detail=f"Pago con ID {payment_id} no encontrado")
 
-    payment_strategy = payment_strategies[payment_data[PAYMENT_METHOD]]
+    payment_strategy=Strategyfactory.get_strategy(payment_data[PAYMENT_METHOD])
 
     validacion_monto = payment_strategy.process_payment(payment_data, payment_id)
 

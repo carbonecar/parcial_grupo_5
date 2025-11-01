@@ -30,7 +30,10 @@ Observacion: Si el servicio esta bajo. Hacer un tag y deployar
  fastapi dev main.py
 
 ### Decisiones de diseño. 
-- Usamos strategy para implementar la lógica de cada uno de los tipos de pago. Para obtener las strategies usamos factory.
+- Usamos strategy para implementar la lógica de cada uno de los tipos de pago.
+    - Objetivo: desacomplar la lógica de negocio en diferntes clases
+- Para obtener las strategies usamos factory.
+  - Objetivo: Desacomplar la lógica de creación y búsqueda de las estrategias en otra clase. 
 
 
  ### Test
