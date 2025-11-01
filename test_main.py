@@ -1,10 +1,12 @@
 # test para main.py
 import pytest
 from fastapi.testclient import TestClient
+from strategy_factory import Strategyfactory
+from credit_card_payment_strategy import CreditCardPaymentStrategy
+from paypal_payment_strategy import PayPalPaymentStrategy
 from main import app
 client = TestClient(app)
 @pytest.fixture(scope="module", autouse=True)
-
 def setup_and_teardown():
     """Fixture para configurar y limpiar el entorno de pruebas."""
     # Setup: Crear un archivo de datos de prueba antes de las pruebas
@@ -78,6 +80,7 @@ def test_update_payment():
     payments = response.json()["payments"]
     assert payments["1"]["amount"] == 150
     assert payments["1"]["payment_method"] == "paypal"
+
 
 
 # Nota: Asegurarse de que el directorio ./files exista antes de ejecutar las pruebas
