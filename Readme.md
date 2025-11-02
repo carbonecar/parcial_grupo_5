@@ -49,9 +49,10 @@ No hay un framework de IOC y se crean las dependencias a través de factories en
 No se modela el dominio por falta de tiempo y deberían abstrarse los DTO en cada capa también
 - api: capa que expone la interfaz
 - application: donde se orquestan los los casos de uso
-- domaion: objetos de dominio y lógica de negocio (aca solo están las strategy por la falta de tiempo de la que habla el punto mas arriba)
+- dominio: objetos de dominio y lógica de negocio
 - ports: interfaces para comunicarse con la persistencia
 - infra: implementaciones
+ 
 
 
  ### Test

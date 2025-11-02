@@ -4,7 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.infra.file_payment_repository import FilePaymentRepository
+
 client = TestClient(app)
+
 @pytest.fixture(scope="module", autouse=True)
 def setup_and_teardown():
     """Fixture para configurar y limpiar el entorno de pruebas."""
@@ -70,20 +72,26 @@ def test_obtener_pagos():
     assert data["payments"]["2"]["payment_method"] == "paypal"
     assert data["payments"]["2"]["status"] == "FALLIDO"
 
+
+
 def test_register_existing_payment():
+    """Prueba para evitar registrar un pago con ID ya existente"""
     #evita registrar un pago con un ID ya existente
+    ### mockear una  status_code 400
+    
     response = client.post(
         "/payments/1",
-        params={"amount": 999, "payment_method": "debit_card"}
+        json={"amount": 100, "payment_method": "credit_card"}
     )
-    assert response.status_code == 400
+
+    assert response.status_code == 409
     data = response.json()
     assert data["detail"].startswith("El pago con ID") and "ya existe" in data["detail"]
     
 def test_register_payment():
     """Prueba para el endpoint POST /payments/{payment_id}"""
-    response = client.post("/payments/3", params={"amount": 200, "payment_method": "credit_card"})
-    assert response.status_code == 200
+    response = client.post("/payments/3", json={"amount": 200, "payment_method": "credit_card"})
+    assert response.status_code == 201
     data = response.json()
     assert data["message"] == "Pago con ID 3 registrado exitosamente."
     # Verificar que el pago se haya guardado correctamente
@@ -96,7 +104,7 @@ def test_register_payment():
 
 def test_update_payment():
     """Prueba para el endpoint POST /payments/{payment_id}/update"""
-    response = client.post("/payments/1/update", params={"amount": 150, "payment_method": "paypal"})
+    response = client.post("/payments/1/update", json={"amount": 150, "payment_method": "paypal"})
     assert response.status_code == 200
     data = response.json()
     assert data["message"] == "Pago con ID 1 actualizado exitosamente."
