@@ -100,12 +100,13 @@ class PaymentsService:
 
     def revert_payment(self, payment_id: str) -> None:
         """
-        Revierte un pago al estado 'REGISTRADO'.
+        Cambia de 'FALLIDO' a 'REGISTRADO'.
         Lanza PaymentNotFoundError si el pago no existe.
         """
         payment_data = self.repository.get_by_id(payment_id)
         if payment_data is None:
             raise PaymentNotFoundError(payment_id)
-
+        if payment_data[STATUS] != STATUS_FALLIDO:
+            raise PaymentValidationError("Solo se pueden revertir pagos en estado FALLIDO")
         payment_data[STATUS] = STATUS_REGISTRADO
         self.repository.save(payment_id, payment_data)

@@ -29,6 +29,6 @@ class CreditCardPaymentStrategy(PaymentStrategy):
         all_payments=self.repo.get_all()
        # Verifico que no exista otro pago con estado registrado
         for pid, pdata in all_payments.items():
-            if pid != payment_id and pdata['status'] == STATUS_REGISTRADO:
+            if pid != payment_id and pdata['status'] == STATUS_REGISTRADO and pdata['payment_method']=='credit_card':
                 return False
         return True

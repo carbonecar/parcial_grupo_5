@@ -5,7 +5,6 @@ Payment routes for managing payments.
 from fastapi import APIRouter,Depends, HTTPException,status
 from app.infra.file_payment_repository import FilePaymentRepository
 from app.application.payments_service import PaymentsService, PaymentAlreadyExistsError,PaymentNotFoundError,PaymentValidationError
-from app.domain.constants import STATUS_REGISTRADO,STATUS
 from app.application.dto.payment_request import PaymentRequest
 router = APIRouter(tags=["Payments"])
 repository = FilePaymentRepository()
