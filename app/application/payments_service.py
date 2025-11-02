@@ -7,13 +7,13 @@ from app.application.strategy_factory import Strategyfactory
 
 # Excepciones de dominio / aplicación
 class PaymentAlreadyExistsError(Exception):
-    pass
+    """Excepción lanzada cuando se intenta registrar un pago que ya existe."""
 
 class PaymentNotFoundError(Exception):
-    pass
+    """Excepción lanzada cuando no se encuentra un pago."""
 
 class PaymentValidationError(Exception):
-    pass
+    """Excepción lanzada cuando un pago no cumple con las reglas de validación."""
 
 class PaymentsService:
     """
