@@ -1,94 +1,89 @@
-from fastapi import APIRouter, HTTPException
-from app.application.strategy_factory import Strategyfactory
+"""
+Payment routes for managing payments.
+"""
+# pylint: disable=raise-missing-from
+from fastapi import APIRouter,Depends, HTTPException,status
 from app.infra.file_payment_repository import FilePaymentRepository
-from app.application.payments_handler import (
-    STATUS,
-    AMOUNT,
-    PAYMENT_METHOD,
-    STATUS_REGISTRADO,
-    STATUS_PAGADO,
-    STATUS_FALLIDO,
-)
-
+from app.application.payments_service import PaymentsService, PaymentAlreadyExistsError,PaymentNotFoundError,PaymentValidationError
+from app.domain.constants import STATUS_REGISTRADO,STATUS
+from app.application.dto.payment_request import PaymentRequest
 router = APIRouter(tags=["Payments"])
 repository = FilePaymentRepository()
 
+def get_payment_service():
+    """
+    Proporciona una instancia de PaymentsService con el repositorio de archivos.
+    """
+    return PaymentsService(FilePaymentRepository())
+
 @router.get("/payments")
-async def obtener_pagos():
+async def obtener_pagos(payments_service: PaymentsService = Depends(get_payment_service)):
     """
     Obtiene todos los pagos del sistema.
     """
-    payments = repository.get_all()
+    payments = payments_service.get_all_payments()
     return {"payments": payments}
 
 
-@router.post("/payments/{payment_id}")
-async def register_payment(payment_id: str, amount: float, payment_method: str):
+@router.post("/payments/{payment_id}",status_code=status.HTTP_201_CREATED)
+async def register_payment(payment_id: str,payment:PaymentRequest,payments_service: PaymentsService = Depends(get_payment_service)):
     """
     Registra un pago con su información.
     """
-    # Verificar si el pago ya existe
-    payments = repository.get_all()
-    if payment_id in payments:
-        raise HTTPException(status_code=400, detail=f"El pago con ID {payment_id} ya existe.")
-    repository.save(payment_id, {"amount": amount, "payment_method": payment_method, "status": STATUS_REGISTRADO})
-    return {"message": f"Pago con ID {payment_id} registrado exitosamente."}
+    try:
+        payments_service.register_payment(payment_id, payment.amount, payment.payment_method)
+        return {"message": f"Pago con ID {payment_id} registrado exitosamente."}
+    except PaymentAlreadyExistsError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"El pago con ID {payment_id} ya existe."
+        )
 
 
-@router.post("/payments/{payment_id}/update")
-async def update_payment(payment_id: str, amount: float, payment_method: str):
+
+@router.post("/payments/{payment_id}/update",status_code=status.HTTP_200_OK)
+async def update_payment(payment_id: str, payment: PaymentRequest,payment_service:PaymentsService = Depends(get_payment_service)):
     """
     Actualiza la información de un pago existente.
     """
-    payment_data = repository.get_by_id(payment_id)
-    if payment_data is None:
+    try:
+        payment_service.update_payment(payment_id, payment.amount, payment.payment_method)
+        return {"message": f"Pago con ID {payment_id} actualizado exitosamente."}
+    except PaymentNotFoundError:
         raise HTTPException(status_code=404, detail=f"Pago con ID {payment_id} no encontrado")
-
-    payment_data[AMOUNT] = amount
-    payment_data[PAYMENT_METHOD] = payment_method
-    repository.save(payment_id, payment_data)
-    return {"message": f"Pago con ID {payment_id} actualizado exitosamente."}
 
 
 @router.post("/payments/{payment_id}/pay")
-async def pay_payment(payment_id: str):
+async def pay_payment(payment_id: str,payments_service: PaymentsService = Depends(get_payment_service)):
     """
-    Marca un pago como pagado.
-    Para el Método de Pago 2 (PayPal) se verifica que el monto sea menor de $5000.
-    Si el pago con PayPal es <5000 se marca como PAGADO.
-    Para el método de pago 1 (Tarjeta de Crédito) se verifica que el monto sea menor de $10,000.
-    Si el pago con Tarjeta de Crédito es <10,000 se marca como PAGADO
+    Procesa el pago si cummple con las reglas de dominio.
     """
 
 
-    payment_data = repository.get_by_id(payment_id)
-    if payment_data is None:
-        raise HTTPException(status_code=404, detail=f"Pago con ID {payment_id} no encontrado")
-
-    payment_strategy=Strategyfactory.get_strategy(payment_data[PAYMENT_METHOD])
-
-    validacion_monto = payment_strategy.process_payment(payment_data, payment_id)
-
-    if validacion_monto:
-        payment_data[STATUS] = STATUS_PAGADO
-        repository.save(payment_id, payment_data)
+    try:
+        payments_service.pay_payment(payment_id)
         return {"message": f"Pago con ID {payment_id} pagado exitosamente."}
-    else:
-        payment_data[STATUS] = STATUS_FALLIDO
-        repository.save(payment_id, payment_data)
-        raise HTTPException(status_code=422,
-                            detail=f"Pago con ID {payment_id} fallido: monto incorrecto para el metodo de pago seleccionado o existe otro pago registrado por procesar.")
-
+    except PaymentNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Pago con ID {payment_id} no encontrado"
+        )
+    except PaymentValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
 
 @router.post("/payments/{payment_id}/revert")
-async def revert_payment(payment_id: str):
+async def revert_payment(payment_id: str, payments_service: PaymentsService = Depends(get_payment_service)):
     """
     Revierte un pago al estado registrado.
     """
-    payment_data = repository.get_by_id(payment_id)
-    if payment_data is None:
-        raise HTTPException(status_code=404, detail=f"Pago con ID {payment_id} no encontrado")
-
-    payment_data[STATUS] = STATUS_REGISTRADO
-    repository.save(payment_id, payment_data)
-    return {"message": f"Pago con ID {payment_id} revertido al estado registrado."}
+    try:
+        payments_service.revert_payment(payment_id)
+        return {"message": f"Pago con ID {payment_id} revertido al estado registrado."}
+    except PaymentNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Pago con ID {payment_id} no encontrado"
+        )

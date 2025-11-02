@@ -4,7 +4,7 @@
 """
 from app.domain.payment_strategy import PaymentStrategy
 from app.ports.payment_repository import PaymentRepository
-from app.application.payments_handler import STATUS, STATUS_REGISTRADO, STATUS_FALLIDO
+from app.domain.constants import STATUS_REGISTRADO
 class CreditCardPaymentStrategy(PaymentStrategy):
     
     """
@@ -29,8 +29,6 @@ class CreditCardPaymentStrategy(PaymentStrategy):
         all_payments=self.repo.get_all()
        # Verifico que no exista otro pago con estado registrado
         for pid, pdata in all_payments.items():
-            if pid != payment_id and pdata[STATUS] == STATUS_REGISTRADO:
-                payment_data[STATUS] = STATUS_FALLIDO
-                self.repo.save_payment_data(payment_id, payment_data)
+            if pid != payment_id and pdata['status'] == STATUS_REGISTRADO:
                 return False
         return True

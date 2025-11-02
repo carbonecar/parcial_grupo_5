@@ -3,7 +3,7 @@ Estrategia de pago para PayPal.
 """
 from app.domain.payment_strategy import PaymentStrategy
 
-from app.application.payments_handler import AMOUNT
+from app.application.payments_service import AMOUNT
 
 class PayPalPaymentStrategy(PaymentStrategy):
     """

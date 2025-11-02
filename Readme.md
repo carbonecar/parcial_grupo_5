@@ -52,6 +52,7 @@ No se modela el dominio por falta de tiempo y deberían abstrarse los DTO en cad
 - domaion: objetos de dominio y lógica de negocio (aca solo están las strategy por la falta de tiempo de la que habla el punto mas arriba)
 - ports: interfaces para comunicarse con la persistencia
 - infra: implementaciones
+- routes: 
 
 
  ### Test
