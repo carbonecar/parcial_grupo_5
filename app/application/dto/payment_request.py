@@ -7,5 +7,3 @@ class PaymentRequest(BaseModel):
     """Data Transfer Object for payment requests."""
     amount: float = Field(..., gt=0, description="The amount to be paid.")
     payment_method: PaymentMethod = Field(..., description="The payment method to be used.")
-
-
