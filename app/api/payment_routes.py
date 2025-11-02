@@ -30,7 +30,7 @@ async def register_payment(payment_id: str,payment:PaymentRequest,payments_servi
     Registra un pago con su información.
     """
     try:
-        payments_service.register_payment(payment_id, payment.amount, payment.payment_method)
+        payments_service.register_payment(payment_id, payment.amount, payment.payment_method.value)
         return {"message": f"Pago con ID {payment_id} registrado exitosamente."}
     except PaymentAlreadyExistsError:
         raise HTTPException(
@@ -46,7 +46,7 @@ async def update_payment(payment_id: str, payment: PaymentRequest,payment_servic
     Actualiza la información de un pago existente.
     """
     try:
-        payment_service.update_payment(payment_id, payment.amount, payment.payment_method)
+        payment_service.update_payment(payment_id, payment.amount, payment.payment_method.value)
         return {"message": f"Pago con ID {payment_id} actualizado exitosamente."}
     except PaymentNotFoundError:
         raise HTTPException(status_code=404, detail=f"Pago con ID {payment_id} no encontrado")
@@ -85,4 +85,9 @@ async def revert_payment(payment_id: str, payments_service: PaymentsService = De
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Pago con ID {payment_id} no encontrado"
+        )
+    except PaymentValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
         )
