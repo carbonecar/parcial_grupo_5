@@ -61,6 +61,32 @@ No se modela el dominio por falta de tiempo y deberían abstrarse los DTO en cad
  Para levantar la api local solo se necesita hacer ``` fastapi dev main.py ```
 
 
+### Diagramas de Arquitectura
+
+#### Documentación Completa
+[Guía de Diagramas UML](./docs/GUIA_DIAGRAMAS_UML.md)
+
+#### Diagramas PNG
+#### Diagrama de clases
+![Diagrama de Clases](./out/docs/diagrama_clases/Diagrama_de_Clases_Sistema_de_Pagos.png)
+#### Diagrama de Arquitectura
+![Diagrama de Arquitectura Hexagonal](./out/docs/diagrama_arquitectura/Diagrama_Arquitectura_Hexagonal.png)
+#### Diagrama de componentes
+![Diagrama de Componentes](./out/docs/diagrama_componentes/Diagrama_Componentes_Pagos.png)
+#### Diagrama de secuencia
+![Diagrama de Secuencia - Flujo de Pago](./out/docs/diagrama_secuencia_pago/Diagrama_Secuencia_Pago.png)
+#### Diagrama de paquetes
+![Diagrama de Paquetes](./out/docs/diagrama_paquetes/Diagrama_Paquetes_Proyecto.png)
+#### Estados
+![Diagrama de Estados](./out/docs/diagrama_estados/Diagrama_Estados_Pago.png)
+#### Despliegue
+![Diagrama de Despliegue](./out/docs/diagrama_despliegue/Diagrama_Despliegue.png)
+#### Patrones
+![Diagrama de Patrones de Diseño](./out/docs/diagrama_patrones/Diagrama_Patrones_Diseño.png)
+
+
+
 ### Supuestos
 Como en el enunciado no lo declara no se supone que existe un flujo entre los estados, salvo el descripto en las operaciones
 por lo tanto no se implementa una máquina de estados para validar las transiciones
+

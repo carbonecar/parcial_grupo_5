@@ -278,54 +278,101 @@ npm install -g plantuml-pipe
 plantuml diagrama_clases.puml -o ../output -Tpng
 ```
 
-### Opción 4: Plugin de GitHub
-1. Copiar archivo .puml al repositorio
-2. GitHub automáticamente renderiza PlantUML en el visor web
-
 ---
 
-## 📚 Relación entre Diagramas
+## 🖼️ Diagramas PNG Generados
+
+Los diagramas han sido compilados a formato PNG y se encuentran disponibles en la carpeta `out/docs/`. Cada diagrama tiene su propia subcarpeta con la imagen renderizada:
+
+### Acceso Directo a los PNG
+
+| Diagrama | Archivo PNG | Ruta |
+|----------|-------------|------|
+| **Diagrama de Clases** | `Diagrama_de_Clases_Sistema_de_Pagos.png` | `out/docs/diagrama_clases/` |
+| **Diagrama de Arquitectura** | `Diagrama_Arquitectura_Hexagonal.png` | `out/docs/diagrama_arquitectura/` |
+| **Diagrama de Componentes** | `Diagrama_Componentes_Pagos.png` | `out/docs/diagrama_componentes/` |
+| **Diagrama de Secuencia** | `Diagrama_Secuencia_Pago.png` | `out/docs/diagrama_secuencia_pago/` |
+| **Diagrama de Paquetes** | `Diagrama_Paquetes_Proyecto.png` | `out/docs/diagrama_paquetes/` |
+| **Diagrama de Estados** | `Diagrama_Estados_Pago.png` | `out/docs/diagrama_estados/` |
+
+### Cómo Usar los PNG
+
+1. **Visualización rápida:**
+   - Navega a la carpeta correspondiente en `out/docs/`
+   - Abre el archivo PNG en tu visor de imágenes favorito
+
+2. **Incluir en documentación:**
+   ```markdown
+   ![Diagrama de Clases](out/docs/diagrama_clases/Diagrama_de_Clases_Sistema_de_Pagos.png)
+   ```
+
+3. **Presentaciones:**
+   - Descarga los PNG de `out/docs/`
+   - Insértalos en PowerPoint, Google Slides o Keynote
+   - Los PNG están optimizados para presentaciones
+
+4. **Repositorio:**
+   - Los PNG están versionados en el repositorio
+   - Aparecen automáticamente en GitHub al visualizar el directorio
+   - Útil para compartir en PRs o issues
+
+### Estructura de Carpetas
 
 ```
-Diagrama de Patrones
-        ↓
-Diagrama de Clases ← Diagrama de Arquitectura
-        ↓                    ↓
-Diagrama de Componentes      Diagrama de Paquetes
-        ↓                    ↓
-Diagrama de Secuencia ← Diagrama de Estados
-        ↓
-Diagrama de Despliegue
+out/docs/
+├── diagrama_arquitectura/
+│   └── Diagrama_Arquitectura_Hexagonal.png
+├── diagrama_clases/
+│   └── Diagrama_de_Clases_Sistema_de_Pagos.png
+├── diagrama_componentes/
+│   └── Diagrama_Componentes_Pagos.png
+├── diagrama_despliegue/
+│   └── Diagrama_Despliegue.png
+├── diagrama_estados/
+│   └── Diagrama_Estados_Pago.png
+├── diagrama_paquetes/
+│   └── Diagrama_Paquetes_Proyecto.png
+├── diagrama_patrones/
+│   └── Diagrama_Patrones_Diseño.png
+└── diagrama_secuencia_pago/
+    └── Diagrama_Secuencia_Pago.png
+```
+
+### Regenerar los PNG
+
+Si necesitas regenerar los PNG después de actualizar los archivos `.puml`:
+
+```bash
+# Requiere Java y PlantUML instalado
+# Desde la carpeta /docs:
+
+plantuml "diagrama_clases.puml" -o ../out/docs/diagrama_clases -Tpng
+plantuml "diagrama_arquitectura.puml" -o ../out/docs/diagrama_arquitectura -Tpng
+plantuml "diagrama_componentes.puml" -o ../out/docs/diagrama_componentes -Tpng
+plantuml "diagrama_secuencia_pago.puml" -o ../out/docs/diagrama_secuencia_pago -Tpng
+plantuml "diagrama_paquetes.puml" -o ../out/docs/diagrama_paquetes -Tpng
+plantuml "diagrama_estados.puml" -o ../out/docs/diagrama_estados -Tpng
+plantuml "diagrama_despliegue.puml" -o ../out/docs/diagrama_despliegue -Tpng
+plantuml "diagrama_patrones.puml" -o ../out/docs/diagrama_patrones -Tpng
+```
+
+O ejecutar un script para regenerarlos todos:
+
+```bash
+#!/bin/bash
+cd parcial_grupo_5/docs
+mkdir -p ../out/docs
+
+for file in diagrama_*.puml; do
+    dirname="${file%.puml}"
+    mkdir -p "../out/docs/$dirname"
+    plantuml "$file" -o "../out/docs/$dirname" -Tpng
+done
+
+echo "Todos los diagramas han sido regenerados"
 ```
 
 ---
-
-## 🔍 Recomendaciones de Uso
-
-### Para Desarrolladores
-- **Diagrama de Clases:** Entender estructura del código
-- **Diagrama de Secuencia:** Debuggear flujos
-- **Diagrama de Estados:** Validar transiciones
-
-### Para Arquitectos
-- **Diagrama de Arquitectura:** Decisiones de diseño
-- **Diagrama de Componentes:** Dependencias del sistema
-- **Diagrama de Patrones:** Justificar decisiones
-
-### Para Testing/QA
-- **Diagrama de Secuencia:** Casos de prueba
-- **Diagrama de Estados:** Cobertura de estados
-- **Diagrama de Despliegue:** Ambientes de prueba
-
-### Para Documentación
-- **Diagrama de Paquetes:** Estructura del proyecto
-- **Diagrama de Arquitectura:** Visión general
-- **Diagrama de Patrones:** Educación
-
----
-
-
--
 
 ## 📖 Referencias
 

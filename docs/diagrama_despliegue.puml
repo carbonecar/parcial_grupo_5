@@ -41,11 +41,7 @@ GHActions -down-> TestServer: run tests & lint
 
 TestServer -right-> GHActions: results
 
-alt Green Tests
-    GHActions -down-> RenderServer: deploy on tag
-else Red Tests
-    GHActions --> GHActions: pipeline fails
-end
+GHActions -down-> RenderServer: deploy on tag\n(si tests pasan)
 
 RenderServer -right-> JSONData: read/write
 

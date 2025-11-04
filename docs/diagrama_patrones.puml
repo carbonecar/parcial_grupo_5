@@ -1,159 +1,108 @@
 @startuml Diagrama_Patrones_Diseño
 !theme plain
 skinparam backgroundColor #FEFEFE
-skinparam packageBackgroundColor #F0F0F0
-skinparam packageBorderColor #333333
+skinparam classBackgroundColor #F0F0F0
+skinparam classBorderColor #333333
 
-package "Patrones de Diseño Utilizados" {
-
-    package "Strategy Pattern" {
-        note "Define una familia de algoritmos\nencapsulándolos y haciéndolos\nintercambiables" as StrategyNote
-
-        package "Ubicación: app/domain/" {
-            class PaymentStrategy <<interface>> {
-                {abstract} +process_payment()
-            }
-
-            class CreditCardPaymentStrategy {
-                -MAX_AMOUNT = 10000
-                -MAX_REGISTERED = 1
-            }
-
-            class PayPalPaymentStrategy {
-                -MIN_AMOUNT = 5000
-            }
-
-            PaymentStrategy <|-- CreditCardPaymentStrategy
-            PaymentStrategy <|-- PayPalPaymentStrategy
-        }
-
-        StrategyNote .. PaymentStrategy
+' STRATEGY PATTERN
+package "1. Strategy Pattern" #FFE6E6 {
+    abstract class PaymentStrategy {
+        {abstract} +process_payment()
     }
+    class CreditCardPaymentStrategy
+    class PayPalPaymentStrategy
 
-    package "Factory Pattern" {
-        note "Crear objetos sin especificar\nsus clases concretas" as FactoryNote
+    PaymentStrategy <|-- CreditCardPaymentStrategy
+    PaymentStrategy <|-- PayPalPaymentStrategy
+}
 
-        package "Ubicación: app/application/" {
-            class StrategyFactory {
-                {static} -_strategies: Dict
-                {static} +get_strategy(method): Strategy
-                {static} -_initialize_strategies()
-            }
-
-            StrategyFactory -right-> PaymentStrategy: instancia
-        }
-
-        FactoryNote .. StrategyFactory
-    }
-
-    package "Repository Pattern" {
-        note "Abstraer la lógica de persistencia\nMediante una interfaz" as RepositoryNote
-
-        package "Ubicación: app/ports/ & app/infra/" {
-            class PaymentRepository <<interface>> {
-                {abstract} +get_all()
-                {abstract} +get_by_id()
-                {abstract} +save()
-                {abstract} +delete()
-                {abstract} +exists()
-            }
-
-            class FilePaymentRepository {
-                -file_path: str
-                +get_all()
-                +get_by_id()
-                +save()
-                +delete()
-                +exists()
-            }
-
-            PaymentRepository <|-- FilePaymentRepository
-            FilePaymentRepository -down-> "data.json"
-        }
-
-        RepositoryNote .. PaymentRepository
-    }
-
-    package "Dependency Injection" {
-        note "Inyectar dependencias\nvia parámetros o métodos" as DINote
-
-        package "Ubicación: app/api/" {
-            class PaymentRoutes {
-                +get_payment_service()
-            }
-
-            PaymentRoutes -right-> PaymentsService: inyecta
-        }
-
-        DINote .. PaymentRoutes
-    }
-
-    package "Service Layer Pattern" {
-        note "Encapsular lógica de negocio\ny orquestar operaciones" as ServiceNote
-
-        package "Ubicación: app/application/" {
-            class PaymentsService {
-                +register_payment()
-                +update_payment()
-                +pay_payment()
-                +revert_payment()
-                +get_all_payments()
-            }
-        }
-
-        ServiceNote .. PaymentsService
-    }
-
-    package "DTO (Data Transfer Object)" {
-        note "Transferir datos entre capas\ncon validación" as DTONote
-
-        package "Ubicación: app/application/dto/" {
-            class PaymentRequest {
-                +id: str
-                +amount: float
-                +method: str
-            }
-
-            enum PaymentMethod {
-                TARJETA_CREDITO
-                PAYPAL
-            }
-        }
-
-        DTONote .. PaymentRequest
-    }
-
-    package "Layered Architecture" {
-        note "Separar responsabilidades\nen capas independientes" as LayerNote
-
-        package "Capas:" {
-            frame "API Layer" as APILayer #FFF0E6
-            frame "Application Layer" as AppLayer #E6F3FF
-            frame "Domain Layer" as DomainLayer #FFE6E6
-            frame "Infrastructure Layer" as InfraLayer #E6FFE6
-
-            APILayer -down-> AppLayer
-            AppLayer -down-> DomainLayer
-            DomainLayer -down-> InfraLayer
-        }
-
-        LayerNote .. APILayer
-    }
-
-    package "Hexagonal Architecture" {
-        note "Aislar núcleo de negocio\nusando puertos y adaptadores" as HexNote
-
-        package "Elementos:" {
-            frame "Core (Domain)" as Core #FFE6E6
-            frame "Puertos (Interfaces)" as Ports #FFFFCC
-            frame "Adaptadores (Infra)" as Adapters #E6FFE6
-
-            Adapters -left-> Ports
-            Ports -left-> Core
-        }
-
-        HexNote .. Core
+' FACTORY PATTERN
+package "2. Factory Pattern" #FFF0E6 {
+    class StrategyFactory {
+        {static} +get_strategy(method)
     }
 }
+
+' REPOSITORY PATTERN
+package "3. Repository Pattern" #E6FFE6 {
+    abstract class PaymentRepository {
+        {abstract} +get_all()
+        {abstract} +save()
+    }
+    class FilePaymentRepository
+    PaymentRepository <|-- FilePaymentRepository
+}
+
+' DEPENDENCY INJECTION
+package "4. Dependency Injection" #E6F3FF {
+    class PaymentRoutes
+    class PaymentsService
+    PaymentRoutes --> PaymentsService
+}
+
+' SERVICE LAYER
+package "5. Service Layer" #FFE6F0 {
+    class ServicePayment {
+        +register_payment()
+        +pay_payment()
+        +revert_payment()
+    }
+}
+
+' DTO PATTERN
+package "6. DTO Pattern" #FFFACD {
+    class PaymentRequest {
+        +id: str
+        +amount: float
+        +method: str
+    }
+}
+
+' LAYERED ARCHITECTURE
+package "7. Layered Architecture" #E0E0FF {
+    class APILayer
+    class AppLayer
+    class DomainLayer
+    class InfraLayer
+
+    APILayer -down-> AppLayer
+    AppLayer -down-> DomainLayer
+    DomainLayer -down-> InfraLayer
+}
+
+note right of PaymentStrategy
+  Strategy Pattern:
+  Define algoritmos intercambiables
+end note
+
+note right of StrategyFactory
+  Factory Pattern:
+  Crear instancias sin especificar clase
+end note
+
+note right of PaymentRepository
+  Repository Pattern:
+  Abstrae persistencia de datos
+end note
+
+note right of PaymentRoutes
+  Dependency Injection:
+  Inyectar dependencias en clases
+end note
+
+note right of ServicePayment
+  Service Layer:
+  Encapsula lógica de negocio
+end note
+
+note right of PaymentRequest
+  DTO Pattern:
+  Transferencia entre capas
+end note
+
+note right of APILayer
+  Layered Architecture:
+  Separación en capas independientes
+end note
 
 @enduml
