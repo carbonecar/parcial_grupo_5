@@ -1,0 +1,78 @@
+@startuml Diagrama_Componentes_Pagos
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentBackgroundColor #F0F0F0
+skinparam componentBorderColor #333333
+skinparam arrowColor #333333
+
+frame "Presentación" as Presentation {
+    component [HTTP Client] as HTTPClient
+}
+
+frame "API Gateway" as APIGateway {
+    component [FastAPI\nServer] as FastAPIServer
+    component [Uvicorn\nASGI] as Uvicorn
+}
+
+frame "Controladores" as Controllers {
+    component [PaymentController\n(payment_routes)] as PaymentController
+}
+
+frame "Servicios de Aplicación" as AppServices {
+    component [PaymentsService] as PaymentsService
+}
+
+frame "Fábricas" as Factories {
+    component [StrategyFactory] as StrategyFactory
+}
+
+frame "Estrategias de Pago" as Strategies {
+    component [PaymentStrategy\n<<interface>>] as StrategyInterface
+    component [CreditCardStrategy] as CCStrategy
+    component [PayPalStrategy] as PPStrategy
+}
+
+frame "Repositorio" as Repository {
+    component [PaymentRepository\n<<interface>>] as RepositoryInterface
+    component [FilePaymentRepository] as FileRepository
+}
+
+frame "Modelos de Dominio" as DomainModels {
+    component [Payment] as Payment
+    component [PaymentConstants] as Constants
+}
+
+frame "Persistencia" as Persistence {
+    component [JSON File\n(data.json)] as JSONFile
+}
+
+frame "Validación" as Validation {
+    component [Pydantic\nValidator] as Pydantic
+}
+
+HTTPClient -down-> FastAPIServer
+FastAPIServer -down-> Uvicorn
+Uvicorn -down-> PaymentController
+
+PaymentController -down-> PaymentsService
+
+PaymentsService -right-> StrategyFactory
+StrategyFactory -down-> StrategyInterface
+StrategyInterface -down-> CCStrategy
+StrategyInterface -down-> PPStrategy
+
+PaymentsService -down-> RepositoryInterface
+RepositoryInterface -down-> FileRepository
+
+FileRepository -down-> JSONFile
+
+PaymentsService -left-> Pydantic
+
+CCStrategy -right-> Payment
+PPStrategy -right-> Payment
+Payment -right-> Constants
+
+CCStrategy -down-> Constants
+PPStrategy -down-> Constants
+
+@enduml

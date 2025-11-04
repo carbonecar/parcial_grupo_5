@@ -1,0 +1,100 @@
+@startuml Diagrama_Arquitectura_Hexagonal
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentBackgroundColor #E0E0FF
+skinparam componentBorderColor #333333
+skinparam arrowColor #333333
+
+frame "Cliente HTTP (Navegador/API Client)" as Client {
+}
+
+frame "CAPA API (Presentación)" as API_Layer #FFF0E6 {
+    component [FastAPI\nApplication] as FastAPI
+    component [PaymentRoutes\n(GET, POST Endpoints)] as PaymentRoutes
+    component [Dependency Injection\n(get_payment_service)] as DI
+
+    FastAPI -down-> PaymentRoutes
+    PaymentRoutes -down-> DI
+}
+
+frame "CAPA APPLICATION (Casos de Uso)" as App_Layer #E6F3FF {
+    component [PaymentsService\n(Orquestación)] as PaymentsService
+    component [StrategyFactory\n(Creación de Estrategias)] as Factory
+    component [DTOs\n(Validación Pydantic)] as DTOs
+
+    DI -down-> PaymentsService
+    PaymentsService -right-> Factory
+    PaymentsService -down-> DTOs
+}
+
+frame "CAPA DOMAIN (Lógica de Negocio)" as Domain_Layer #FFE6E6 {
+    component [PaymentStrategy\n(Interfaz Abstracta)] as StrategyInterface
+    component [CreditCardPaymentStrategy\n(CC Validation)] as CC_Strategy
+    component [PayPalPaymentStrategy\n(PayPal Validation)] as PP_Strategy
+    component [Payment Model\n(Entidad Dominio)] as PaymentModel
+    component [Constants\n(Valores Negocio)] as Constants
+
+    Factory -down-> StrategyInterface
+    StrategyInterface -down-> CC_Strategy
+    StrategyInterface -down-> PP_Strategy
+    PaymentsService -down-> StrategyInterface
+    StrategyInterface -right-> Constants
+}
+
+frame "PUERTOS (Interfaces/Abstracción)" as Ports_Layer #FFFFCC {
+    component [PaymentRepository\n(Interfaz Port)] as RepositoryInterface
+
+    PaymentsService -down-> RepositoryInterface
+}
+
+frame "ADAPTADORES/INFRAESTRUCTURA" as Infra_Layer #E6FFE6 {
+    component [FilePaymentRepository\n(JSON Adapter)] as FileRepository
+    component [data.json\n(Persistencia)] as DataStorage
+
+    RepositoryInterface -down-> FileRepository
+    FileRepository -down-> DataStorage
+}
+
+frame "Excepciones de Dominio" as Exceptions #FFE6F0 {
+    component [PaymentAlreadyExistsError] as Ex1
+    component [PaymentNotFoundError] as Ex2
+    component [PaymentValidationError] as Ex3
+
+    PaymentsService -.-> Ex1
+    PaymentsService -.-> Ex2
+    PaymentsService -.-> Ex3
+}
+
+Client -down-> FastAPI
+
+note right of API_Layer
+  Expone endpoints REST
+  Traduce HTTP a DTOs
+  Inyecta dependencias
+end note
+
+note right of App_Layer
+  Orquesta casos de uso
+  Valida datos de entrada
+  Coordina componentes
+end note
+
+note right of Domain_Layer
+  Lógica pura de negocio
+  Sin dependencias técnicas
+  Patrones: Strategy, Factory
+end note
+
+note right of Ports_Layer
+  Define contratos de dependencias
+  Permite inversión de control
+  Facilita testing
+end note
+
+note right of Infra_Layer
+  Implementaciones técnicas
+  JSON persistence
+  Detalles de infraestructura
+end note
+
+@enduml

@@ -1,0 +1,114 @@
+@startuml Diagrama_Secuencia_Pago
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam actorBackgroundColor #FFE6E6
+skinparam participantBackgroundColor #E6F3FF
+skinparam participantBorderColor #333333
+skinparam arrowColor #333333
+
+participant "Cliente HTTP" as Client
+participant "FastAPI\nPaymentRoutes" as Routes
+participant "PaymentsService" as Service
+participant "StrategyFactory" as Factory
+participant "PaymentStrategy\n(CC/PayPal)" as Strategy
+participant "PaymentRepository\n(FileRepository)" as Repository
+participant "data.json" as Storage
+
+== Caso de Uso: Procesar un Pago ==
+
+Client ->> Routes: POST /payments/{id}/pay
+activate Routes
+
+Routes ->> Service: pay_payment(payment_id)
+activate Service
+
+Service ->> Repository: get_by_id(payment_id)
+activate Repository
+Repository ->> Storage: read data.json
+Repository -->> Service: payment_data
+deactivate Repository
+
+Service ->> Service: validate_payment_exists()
+
+Service ->> Service: validate_state_transition()
+note right of Service
+  REGISTRADO -> PAGADO
+  es transición válida
+end note
+
+Service ->> Factory: get_strategy(payment_method)
+activate Factory
+Factory -->> Service: PaymentStrategy instance
+deactivate Factory
+
+Service ->> Strategy: process_payment(payment_data, payment_id)
+activate Strategy
+Strategy ->> Strategy: validate_payment_rules()
+note right of Strategy
+  CC: amount < 10000
+       max 1 registrado
+
+  PayPal: amount < 5000
+end note
+
+alt Validación Exitosa
+  Strategy -->> Service: true
+  deactivate Strategy
+
+  Service ->> Service: update payment status REGISTRADO -> PAGADO
+
+  Service ->> Repository: save(payment_id, updated_data)
+  activate Repository
+  Repository ->> Storage: write data.json
+  deactivate Repository
+
+  Service -->> Routes: {id, status: "PAGADO", ...}
+
+else Validación Fallida
+  Strategy -->> Service: false
+  deactivate Strategy
+
+  Service ->> Service: update payment status REGISTRADO -> FALLIDO
+
+  Service ->> Repository: save(payment_id, updated_data)
+  activate Repository
+  Repository ->> Storage: write data.json
+  deactivate Repository
+
+  Service -->> Routes: PaymentValidationError (422)
+end
+
+deactivate Service
+Routes -->> Client: HTTP 200 / 422
+deactivate Routes
+
+== Caso de Uso: Revertir un Pago Fallido ==
+
+Client ->> Routes: POST /payments/{id}/revert
+activate Routes
+
+Routes ->> Service: revert_payment(payment_id)
+activate Service
+
+Service ->> Repository: get_by_id(payment_id)
+activate Repository
+Repository ->> Storage: read data.json
+Repository -->> Service: payment_data
+deactivate Repository
+
+Service ->> Service: validate_payment_status == FALLIDO
+
+Service ->> Service: update status FALLIDO -> REGISTRADO
+
+Service ->> Repository: save(payment_id, updated_data)
+activate Repository
+Repository ->> Storage: write data.json
+deactivate Repository
+
+Service -->> Routes: {id, status: "REGISTRADO", ...}
+
+deactivate Service
+Routes -->> Client: HTTP 200
+deactivate Routes
+
+@enduml

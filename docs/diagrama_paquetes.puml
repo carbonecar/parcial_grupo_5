@@ -1,0 +1,122 @@
+@startuml Diagrama_Paquetes_Proyecto
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam packageBackgroundColor #F0F0F0
+skinparam packageBorderColor #333333
+skinparam arrowColor #333333
+
+package "app" {
+    package "api" {
+        file "payment_routes.py" as API
+    }
+
+    package "application" {
+        file "payments_service.py" as AppService
+        file "strategy_factory.py" as StrategyFact
+
+        package "dto" {
+            file "payment_method.py" as DTOMethod
+            file "payment_request.py" as DTORequest
+        }
+    }
+
+    package "domain" {
+        file "constants.py" as Constants
+        file "payment.py" as Payment
+        file "payment_strategy.py" as StrategyAbs
+        file "credit_card_payment_strategy.py" as CCStrategy
+        file "paypal_payment_strategy.py" as PPStrategy
+    }
+
+    package "ports" {
+        file "payment_repository.py" as RepositoryPort
+    }
+
+    package "infra" {
+        file "file_payment_repository.py" as FileRepository
+    }
+
+    file "main.py" as Main
+}
+
+package "tests" {
+    file "config_test.py" as TestConfig
+    file "test_main.py" as TestMain
+    file "test_strategy.py" as TestStrategy
+}
+
+package "docs" {
+    file "README.md" as Readme
+}
+
+package "github" {
+    package "workflows" {
+        file "ci-pipeline.yml" as CIPipeline
+        file "cd-release.yml" as CDPipeline
+    }
+}
+
+file "config.py" as Config
+file "requirements.txt" as Requirements
+file "data.json" as DataFile
+file ".pylintrc" as Pylint
+
+' Dependencias entre paquetes
+API --> AppService: importa
+API --> Config: importa
+
+AppService --> StrategyFact: importa
+AppService --> RepositoryPort: importa
+AppService --> DTORequest: importa
+AppService --> Constants: importa
+
+StrategyFact --> StrategyAbs: importa
+StrategyFact --> CCStrategy: importa
+StrategyFact --> PPStrategy: importa
+
+CCStrategy --> Constants: importa
+PPStrategy --> Constants: importa
+
+AppService --> Payment: importa
+
+RepositoryPort --> Payment: importa
+FileRepository --> RepositoryPort: implementa
+FileRepository --> DataFile: lee/escribe
+
+Main --> API: importa
+Main --> AppService: importa
+Main --> Config: importa
+
+TestMain --> AppService: testea
+TestMain --> RepositoryPort: testea
+TestStrategy --> CCStrategy: testea
+TestStrategy --> PPStrategy: testea
+
+Config --> Requirements: define dependencias
+Pylint --> app: analiza código
+
+CIPipeline --> TestMain: ejecuta
+CIPipeline --> TestStrategy: ejecuta
+CDPipeline --> CIPipeline: requiere éxito
+
+note right of Main
+  Punto de entrada
+  de la aplicación
+end note
+
+note right of AppService
+  Orquestación de
+  casos de uso
+end note
+
+note right of FileRepository
+  Adaptador concreto
+  de persistencia
+end note
+
+note right of RepositoryPort
+  Contrato/Puerto
+  de abstracción
+end note
+
+@enduml

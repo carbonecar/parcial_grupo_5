@@ -1,0 +1,85 @@
+@startuml Diagrama_Despliegue
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam nodeBackgroundColor #FFE6E6
+skinparam nodeBorderColor #333333
+skinparam arrowColor #333333
+
+node "Estación Local del Desarrollador" as LocalDev {
+    component [Code Editor\n(VSCode)] as Editor
+    component [Python 3.x] as Python
+    component [Git Repository] as LocalGit
+}
+
+node "GitHub Repository" as GitHub {
+    component [Source Code] as SourceCode
+    component [CI/CD Workflows\n(GitHub Actions)] as GHActions
+}
+
+node "Servidor de Testing" as TestServer {
+    component [Pytest\nTest Runner] as Pytest
+    component [Coverage\nAnalyzer] as Coverage
+    component [Pylint\nLinter] as Linter
+}
+
+node "Servidor Render.com (Producción)" as RenderServer {
+    component [FastAPI App] as FastAPI
+    component [Uvicorn ASGI] as Uvicorn
+    component [Persistencia JSON] as JSONData
+}
+
+node "Cliente" as Client {
+    component [Navegador/API Client] as ClientApp
+}
+
+' Relaciones
+Editor -down-> LocalGit: git commit/push
+LocalGit -down-> GitHub: push code
+
+GitHub -right-> GHActions: trigger CI/CD
+GHActions -down-> TestServer: run tests & lint
+
+TestServer -right-> GHActions: results
+
+alt Green Tests
+    GHActions -down-> RenderServer: deploy on tag
+else Red Tests
+    GHActions --> GHActions: pipeline fails
+end
+
+RenderServer -right-> JSONData: read/write
+
+Client -left-> FastAPI: HTTP requests
+FastAPI -right-> Uvicorn: ASGI server
+
+note right of LocalDev
+  Desarrollo local
+  - Editar código
+  - Testing manual
+  - Git version control
+end note
+
+note right of GitHub
+  Control remoto de código
+  - Source of truth
+  - CI/CD triggers
+  - Release tags
+end note
+
+note right of TestServer
+  Validación automática
+  - Tests unitarios
+  - Tests integración
+  - Análisis estático (pylint)
+  - Cobertura de tests
+end note
+
+note right of RenderServer
+  Ambiente de Producción
+  - FastAPI + Uvicorn
+  - Auto-scaling
+  - Persistencia JSON
+  - URL: parcial-grupo-5.onrender.com
+end note
+
+@enduml

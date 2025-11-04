@@ -1,0 +1,53 @@
+@startuml Diagrama_Estados_Pago
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam stateBackgroundColor #E6F3FF
+skinparam stateBorderColor #333333
+skinparam arrowColor #333333
+
+[*] --> REGISTRADO: register_payment()
+
+REGISTRADO --> PAGADO: pay_payment() exitoso
+note on link
+  - Validaciones Strategy OK
+  - Status actualizado a PAGADO
+  - Persistencia en data.json
+end note
+
+REGISTRADO --> FALLIDO: pay_payment() fallido
+note on link
+  - Validaciones Strategy FALLAN
+  - Status actualizado a FALLIDO
+  - Persistencia en data.json
+  - Lanza PaymentValidationError
+end note
+
+FALLIDO --> REGISTRADO: revert_payment()
+note on link
+  - Solo si status == FALLIDO
+  - Regresa a REGISTRADO
+  - Permite reintentar pago
+end note
+
+PAGADO --> [*]: (fin del ciclo de vida)
+
+note right of REGISTRADO
+  Estado inicial
+  Pago no procesado
+  Listo para procesar
+end note
+
+note right of PAGADO
+  Estado terminal
+  Pago completado exitosamente
+  No hay transiciones posibles
+end note
+
+note right of FALLIDO
+  Estado reversible
+  Pago rechazado por validación
+  Se puede revertir a REGISTRADO
+  Permite reintentar
+end note
+
+@enduml

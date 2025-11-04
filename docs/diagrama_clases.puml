@@ -1,0 +1,166 @@
+@startuml Diagrama_de_Clases_Sistema_de_Pagos
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #F0F0F0
+skinparam classBorderColor #333333
+skinparam arrowColor #333333
+
+' CAPA DOMAIN
+package "domain" #FFE6E6 {
+    abstract class PaymentStrategy {
+        {abstract} +process_payment(payment_data: dict, payment_id: str): bool
+    }
+
+    class CreditCardPaymentStrategy {
+        +process_payment(payment_data: dict, payment_id: str): bool
+        -MAX_AMOUNT: int = 10000
+        -MAX_REGISTERED_PAYMENTS: int = 1
+    }
+
+    class PayPalPaymentStrategy {
+        +process_payment(payment_data: dict, payment_id: str): bool
+        -MIN_AMOUNT: int = 5000
+    }
+
+    class Payment {
+        +id: str
+        +amount: float
+        +method: str
+        +status: str
+        +email: str
+        +card_number: str (optional)
+        +paypal_email: str (optional)
+    }
+
+    class PaymentConstants {
+        {static} +PAYMENT_STATUS_REGISTERED: str = "REGISTRADO"
+        {static} +PAYMENT_STATUS_PAID: str = "PAGADO"
+        {static} +PAYMENT_STATUS_FAILED: str = "FALLIDO"
+        {static} +PAYMENT_METHOD_CREDIT_CARD: str = "TARJETA_CREDITO"
+        {static} +PAYMENT_METHOD_PAYPAL: str = "PAYPAL"
+    }
+}
+
+' CAPA APPLICATION
+package "application" #E6F3FF {
+    class PaymentsService {
+        -repository: PaymentRepository
+        -strategy_factory: StrategyFactory
+        +register_payment(request: PaymentRequest): dict
+        +update_payment(payment_id: str, request: PaymentRequest): dict
+        +pay_payment(payment_id: str): dict
+        +revert_payment(payment_id: str): dict
+        +get_all_payments(): dict
+        -_validate_payment_transition(current_status: str, new_status: str): void
+    }
+
+    class StrategyFactory {
+        {static} -_strategies: Dict[str, PaymentStrategy]
+        {static} +get_strategy(payment_method: PaymentMethod): PaymentStrategy
+        {static} -_initialize_strategies(): void
+    }
+
+    package "dto" #E6F3FF {
+        class PaymentRequest {
+            +id: str
+            +amount: float
+            +method: str
+            +email: str
+            +card_number: str (optional)
+            +paypal_email: str (optional)
+        }
+
+        enum PaymentMethod {
+            TARJETA_CREDITO
+            PAYPAL
+        }
+    }
+}
+
+' PUERTOS
+package "ports" #FFFFCC {
+    abstract class PaymentRepository {
+        {abstract} +get_all(): Dict[str, dict]
+        {abstract} +get_by_id(payment_id: str): Optional[dict]
+        {abstract} +save(payment_id: str, data: dict): void
+        {abstract} +delete(payment_id: str): void
+        {abstract} +exists(payment_id: str): bool
+    }
+}
+
+' INFRAESTRUCTURA
+package "infra" #E6FFE6 {
+    class FilePaymentRepository {
+        -file_path: str = "data.json"
+        +get_all(): Dict[str, dict]
+        +get_by_id(payment_id: str): Optional[dict]
+        +save(payment_id: str, data: dict): void
+        +delete(payment_id: str): void
+        +exists(payment_id: str): bool
+        -_load_data(): dict
+        -_save_data(data: dict): void
+    }
+}
+
+' CAPA API
+package "api" #FFF0E6 {
+    class PaymentRoutes {
+        +get_payments(): dict
+        +register_payment(payment_id: str, request: PaymentRequest): dict
+        +update_payment(payment_id: str, request: PaymentRequest): dict
+        +pay_payment(payment_id: str): dict
+        +revert_payment(payment_id: str): dict
+    }
+}
+
+' EXCEPCIONES
+package "exceptions" #FFE6F0 {
+    class PaymentAlreadyExistsError {
+        +message: str
+    }
+
+    class PaymentNotFoundError {
+        +message: str
+    }
+
+    class PaymentValidationError {
+        +message: str
+    }
+}
+
+' RELACIONES
+PaymentStrategy <|-- CreditCardPaymentStrategy
+PaymentStrategy <|-- PayPalPaymentStrategy
+
+PaymentsService --> PaymentRepository : usa
+PaymentsService --> StrategyFactory : utiliza
+StrategyFactory --> PaymentStrategy : crea
+
+PaymentRepository <|-- FilePaymentRepository
+
+PaymentRoutes --> PaymentsService : delega en
+
+PaymentsService --> PaymentAlreadyExistsError : lanza
+PaymentsService --> PaymentNotFoundError : lanza
+PaymentsService --> PaymentValidationError : lanza
+
+PaymentRequest --> PaymentMethod : contiene
+PaymentsService --> PaymentRequest : recibe
+
+note right of PaymentStrategy
+  Patrón Strategy
+  Define interfaz para procesar
+  diferentes métodos de pago
+end note
+
+note right of FilePaymentRepository
+  Adaptador concreto
+  Persiste en JSON
+end note
+
+note right of PaymentsService
+  Orquesta casos de uso
+  Coordina Strategy + Repository
+end note
+
+@enduml
